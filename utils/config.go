@@ -6,6 +6,12 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// BaseConfig holds base configuration for migrations
+type BaseConfig struct {
+	MigrationURL string
+	DBName       string
+}
+
 // LoadEnv loads environment variables from .env file
 func LoadEnv(paths ...string) {
 	if len(paths) > 0 {
@@ -21,4 +27,12 @@ func GetEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// FormatTableName formats a table name with schema prefix
+func FormatTableName(schema, table string) string {
+	if schema != "" {
+		return schema + "." + table
+	}
+	return table
 }

@@ -1,37 +1,35 @@
 package utils
 
 import (
-	"fmt"
-	"log"
+	"database/sql"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/lib/pq"
 )
 
-// RunMigration runs database migrations
-func RunMigration(databaseURL, schema, migrationPath string) error {
-	migrationURL := databaseURL
-	if schema != "" {
-		migrationURL = fmt.Sprintf("%s?search_path=%s", databaseURL, schema)
-	}
-
-	m, err := migrate.New(
-		fmt.Sprintf("file://%s", migrationPath),
-		migrationURL,
-	)
+// RunMigrationPool runs database migrations using sql.DB
+func RunMigrationPool(db *sql.DB, config *BaseConfig) error {
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		return fmt.Errorf("failed to create migration instance: %w", err)
+		return err
 	}
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		return fmt.Errorf("failed to run migration: %w", err)
+	_, err = db.Exec("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return err
 	}
 
-	if err == migrate.ErrNoChange {
-		log.Println("No new migrations to apply")
-	} else {
-		log.Println("Migrations applied successfully")
+	m, err := migrate.NewWithDatabaseInstance(config.MigrationURL, config.DBName, driver)
+	if err != nil {
+		return err
+	}
+
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		return err
 	}
 
 	return nil

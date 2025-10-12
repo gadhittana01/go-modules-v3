@@ -2,11 +2,15 @@ package utils
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/lib/pq"
 )
 
 type PGXPool interface {
@@ -17,24 +21,58 @@ type PGXPool interface {
 	Close()
 }
 
-// ConnectDBPool creates a new PostgreSQL connection pool
-func ConnectDBPool(databaseURL string) (*pgxpool.Pool, error) {
-	config, err := pgxpool.ParseConfig(databaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse database URL: %w", err)
+// ConnectDBPool creates a new database connection pool with retry logic
+func ConnectDBPool(databaseURL string) (PGXPool, error) {
+	var dbPool *pgxpool.Pool
+	var err error
+
+	// Retry logic for database connection
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		dbPool, err = pgxpool.New(context.Background(), databaseURL)
+		if err == nil {
+			// Test the connection
+			err = dbPool.Ping(context.Background())
+			if err == nil {
+				log.Println("Successfully connected to database")
+				return dbPool, nil
+			}
+		}
+
+		log.Printf("Failed to connect to database (attempt %d/%d): %v", i+1, maxRetries, err)
+		if i < maxRetries-1 {
+			time.Sleep(time.Second * 2)
+		}
 	}
 
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create connection pool: %w", err)
+	return nil, fmt.Errorf("failed to connect to database after %d attempts: %w", maxRetries, err)
+}
+
+// ConnectDB creates a sql.DB connection for migrations
+func ConnectDB(databaseURL string) (*sql.DB, error) {
+	var db *sql.DB
+	var err error
+
+	// Retry logic for database connection
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		db, err = sql.Open("postgres", databaseURL)
+		if err == nil {
+			// Test the connection
+			err = db.Ping()
+			if err == nil {
+				log.Println("Successfully connected to database (sql.DB)")
+				return db, nil
+			}
+		}
+
+		log.Printf("Failed to connect to database (attempt %d/%d): %v", i+1, maxRetries, err)
+		if i < maxRetries-1 {
+			time.Sleep(time.Second * 2)
+		}
 	}
 
-	// Test connection
-	if err := pool.Ping(context.Background()); err != nil {
-		return nil, fmt.Errorf("unable to ping database: %w", err)
-	}
-
-	return pool, nil
+	return nil, fmt.Errorf("failed to connect to database after %d attempts: %w", maxRetries, err)
 }
 
 // ExecTxPool executes a function within a database transaction
