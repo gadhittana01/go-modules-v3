@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/yourusername/go-modules/utils"
+	"github.com/gadhittana01/go-modules-v3/utils"
 )
 
 // BaseRepository provides common repository functionality
