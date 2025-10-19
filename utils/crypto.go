@@ -18,3 +18,8 @@ func CheckPassword(password, hashedPassword string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil
 }
+
+// CheckPasswordHash is an alias for CheckPassword for compatibility
+func CheckPasswordHash(password, hashedPassword string) bool {
+	return CheckPassword(password, hashedPassword)
+}
