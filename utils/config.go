@@ -14,13 +14,14 @@ type BaseConfig struct {
 
 // Config holds application configuration
 type Config struct {
-	DBConnString string
-	RedisHost    string
-	RedisPort    string
-	Port         string
-	MigrationURL string
-	DBName       string
-	JWTSecret    string
+	DBConnString  string
+	RedisHost     string
+	RedisPort     string
+	RedisPassword string
+	Port          string
+	MigrationURL  string
+	DBName        string
+	JWTSecret     string
 }
 
 // LoadEnv loads environment variables from .env file
@@ -54,12 +55,13 @@ func CheckAndSetConfig(configPath, configName string) *Config {
 	LoadEnv(configPath + "/" + configName + ".env")
 
 	return &Config{
-		DBConnString: GetEnv("DB_CONN_STRING", "postgres://user:password@localhost:5432/dbname?sslmode=disable"),
-		RedisHost:    GetEnv("REDIS_HOST", "localhost"),
-		RedisPort:    GetEnv("REDIS_PORT", "6379"),
-		Port:         GetEnv("PORT", "8000"),
-		MigrationURL: "file://db/migration",
-		DBName:       "postgres",
-		JWTSecret:    GetEnv("JWT_SECRET", "your_jwt_secret_key_here_change_in_production"),
+		DBConnString:  GetEnv("DB_CONN_STRING", "postgres://user:password@localhost:5432/dbname?sslmode=disable"),
+		RedisHost:     GetEnv("REDIS_HOST", "localhost"),
+		RedisPort:     GetEnv("REDIS_PORT", "6379"),
+		RedisPassword: GetEnv("REDIS_PASSWORD", ""),
+		Port:          GetEnv("PORT", "8000"),
+		MigrationURL:  "file://db/migration",
+		DBName:        "postgres",
+		JWTSecret:     GetEnv("JWT_SECRET", "your_jwt_secret_key_here_change_in_production"),
 	}
 }
