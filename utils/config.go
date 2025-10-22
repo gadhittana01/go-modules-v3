@@ -22,6 +22,7 @@ type Config struct {
 	MigrationURL  string
 	DBName        string
 	JWTSecret     string
+	KafkaBrokers  string
 }
 
 // LoadEnv loads environment variables from .env file
@@ -63,5 +64,6 @@ func CheckAndSetConfig(configPath, configName string) *Config {
 		MigrationURL:  "file://db/migration",
 		DBName:        "postgres",
 		JWTSecret:     GetEnv("JWT_SECRET", "your_jwt_secret_key_here_change_in_production"),
+		KafkaBrokers:  GetEnv("KAFKA_BROKERS", "localhost:9092"),
 	}
 }
