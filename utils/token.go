@@ -35,6 +35,12 @@ type GenerateTokenResp struct {
 	ExpToken int64
 }
 
+type TokenPairResp struct {
+	AccessToken  string
+	RefreshToken string
+	ExpiresIn    int64 // seconds until access token expires
+}
+
 // NewToken creates a new token client
 func NewToken(secret string, expiryHours int) TokenClient {
 	return &tokenClient{
@@ -242,4 +248,106 @@ func RevokeTokenFromRedis(ctx context.Context, userID string) error {
 		return errors.New("Redis token manager not initialized")
 	}
 	return globalRedisTokenManager.RevokeToken(ctx, userID)
+}
+
+// GenerateTokenPair generates both access and refresh tokens
+func GenerateTokenPair(req GenerateTokenReq) (TokenPairResp, error) {
+	if globalRedisTokenManager == nil {
+		return TokenPairResp{}, errors.New("Redis token manager not initialized")
+	}
+
+	// Access token: 15 minutes
+	accessExpTime := time.Now().Add(15 * time.Minute)
+	accessExpToken := accessExpTime.Unix()
+	accessClaims := jwt.MapClaims{
+		"user_id":  req.UserID,
+		"username": req.Username,
+		"exp":      accessExpToken,
+		"iat":      time.Now().Unix(),
+		"type":     "access",
+	}
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	accessTokenString, err := accessToken.SignedString([]byte(globalRedisTokenManager.secret))
+	if err != nil {
+		return TokenPairResp{}, err
+	}
+
+	// Refresh token: 7 days
+	refreshExpTime := time.Now().Add(7 * 24 * time.Hour)
+	refreshExpToken := refreshExpTime.Unix()
+	refreshClaims := jwt.MapClaims{
+		"user_id":  req.UserID,
+		"username": req.Username,
+		"exp":      refreshExpToken,
+		"iat":      time.Now().Unix(),
+		"type":     "refresh",
+	}
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshTokenString, err := refreshToken.SignedString([]byte(globalRedisTokenManager.secret))
+	if err != nil {
+		return TokenPairResp{}, err
+	}
+
+	return TokenPairResp{
+		AccessToken:  accessTokenString,
+		RefreshToken: refreshTokenString,
+		ExpiresIn:    900, // 15 minutes in seconds
+	}, nil
+}
+
+// StoreRefreshTokenInRedis stores a refresh token in Redis
+func StoreRefreshTokenInRedis(ctx context.Context, userID, token string) error {
+	if globalRedisTokenManager == nil {
+		return errors.New("Redis token manager not initialized")
+	}
+	key := fmt.Sprintf("refresh_token:%s", userID)
+	expiration := 7 * 24 * time.Hour // 7 days
+	return globalRedisTokenManager.redisClient.Set(ctx, key, token, expiration).Err()
+}
+
+// ValidateRefreshToken validates a refresh token
+func ValidateRefreshToken(ctx context.Context, tokenString string) (*TokenClaims, error) {
+	if globalRedisTokenManager == nil {
+		return nil, errors.New("Redis token manager not initialized")
+	}
+
+	// First, parse the JWT token to get user_id and check if it's a refresh token
+	claims, err := globalRedisTokenManager.parseJWTToken(tokenString)
+	if err != nil {
+		return nil, fmt.Errorf("invalid JWT token: %w", err)
+	}
+
+	// Check if token exists in Redis
+	key := fmt.Sprintf("refresh_token:%s", claims.UserID)
+	storedToken, err := globalRedisTokenManager.redisClient.Get(ctx, key).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, errors.New("refresh token not found - user may have logged out")
+		}
+		return nil, fmt.Errorf("Redis error: %w", err)
+	}
+
+	// Compare tokens
+	if storedToken != tokenString {
+		return nil, errors.New("refresh token mismatch - invalid session")
+	}
+
+	return claims, nil
+}
+
+// RevokeRefreshTokenFromRedis removes a refresh token from Redis
+func RevokeRefreshTokenFromRedis(ctx context.Context, userID string) error {
+	if globalRedisTokenManager == nil {
+		return errors.New("Redis token manager not initialized")
+	}
+	key := fmt.Sprintf("refresh_token:%s", userID)
+	return globalRedisTokenManager.redisClient.Del(ctx, key).Err()
+}
+
+// RevokeAllTokens removes both access and refresh tokens
+func RevokeAllTokens(ctx context.Context, userID string) error {
+	if err := RevokeTokenFromRedis(ctx, userID); err != nil {
+		return err
+	}
+	return RevokeRefreshTokenFromRedis(ctx, userID)
 }
