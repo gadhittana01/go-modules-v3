@@ -14,15 +14,18 @@ type BaseConfig struct {
 
 // Config holds application configuration
 type Config struct {
-	DBConnString  string
-	RedisHost     string
-	RedisPort     string
-	RedisPassword string
-	Port          string
-	MigrationURL  string
-	DBName        string
-	JWTSecret     string
-	KafkaBrokers  string
+	DBConnString      string
+	RedisHost         string
+	RedisPort         string
+	RedisPassword     string
+	Port              string
+	MigrationURL      string
+	DBName            string
+	JWTSecret         string
+	KafkaBrokers      string
+	UserServiceURL    string
+	ArticleServiceURL string
+	CommentServiceURL string
 }
 
 // LoadEnv loads environment variables from .env file
@@ -56,14 +59,17 @@ func CheckAndSetConfig(configPath, configName string) *Config {
 	LoadEnv(configPath + "/" + configName + ".env")
 
 	return &Config{
-		DBConnString:  GetEnv("DB_CONN_STRING", "postgres://user:password@localhost:5432/dbname?sslmode=disable"),
-		RedisHost:     GetEnv("REDIS_HOST", "localhost"),
-		RedisPort:     GetEnv("REDIS_PORT", "6379"),
-		RedisPassword: GetEnv("REDIS_PASSWORD", ""),
-		Port:          GetEnv("PORT", "8000"),
-		MigrationURL:  "file://db/migration",
-		DBName:        "postgres",
-		JWTSecret:     GetEnv("JWT_SECRET", "your_jwt_secret_key_here_change_in_production"),
-		KafkaBrokers:  GetEnv("KAFKA_BROKERS", "localhost:9092"),
+		DBConnString:      GetEnv("DB_CONN_STRING", "postgres://user:password@localhost:5432/dbname?sslmode=disable"),
+		RedisHost:         GetEnv("REDIS_HOST", "localhost"),
+		RedisPort:         GetEnv("REDIS_PORT", "6379"),
+		RedisPassword:     GetEnv("REDIS_PASSWORD", ""),
+		Port:              GetEnv("PORT", "8000"),
+		MigrationURL:      GetEnv("MIGRATION_URL", "file://db/migration"),
+		DBName:            GetEnv("DB_NAME", "postgres"),
+		JWTSecret:         GetEnv("JWT_SECRET", "your_jwt_secret_key_here_change_in_production"),
+		KafkaBrokers:      GetEnv("KAFKA_BROKERS", "localhost:9092"),
+		UserServiceURL:    GetEnv("USER_SERVICE_URL", "http://localhost:8001"),
+		ArticleServiceURL: GetEnv("ARTICLE_SERVICE_URL", "http://localhost:8002"),
+		CommentServiceURL: GetEnv("COMMENT_SERVICE_URL", "http://localhost:8003"),
 	}
 }
