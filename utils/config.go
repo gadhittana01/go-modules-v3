@@ -26,6 +26,11 @@ type Config struct {
 	UserServiceURL    string
 	ArticleServiceURL string
 	CommentServiceURL string
+	StorageAccessKey  string
+	StorageSecretKey  string
+	StorageEndpoint   string
+	StorageRegion     string
+	StorageBucket     string
 }
 
 // LoadEnv loads environment variables from .env file
@@ -71,5 +76,10 @@ func CheckAndSetConfig(configPath, configName string) *Config {
 		UserServiceURL:    GetEnv("USER_SERVICE_URL", "http://localhost:8001"),
 		ArticleServiceURL: GetEnv("ARTICLE_SERVICE_URL", "http://localhost:8002"),
 		CommentServiceURL: GetEnv("COMMENT_SERVICE_URL", "http://localhost:8003"),
+		StorageAccessKey:  GetEnv("STORAGE_ACCESS_KEY", ""),
+		StorageSecretKey:  GetEnv("STORE_SECRET_KEY", ""),
+		StorageEndpoint:   GetEnv("STORAGE_ENDPOINT", ""),
+		StorageRegion:     GetEnv("STORAGE_REGION", "ap-southeast-1"),
+		StorageBucket:     GetEnv("STORAGE_BUCKET", "uploads"),
 	}
 }
