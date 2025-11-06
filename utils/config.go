@@ -77,9 +77,9 @@ func CheckAndSetConfig(configPath, configName string) *Config {
 		ArticleServiceURL: GetEnv("ARTICLE_SERVICE_URL", "http://localhost:8002"),
 		CommentServiceURL: GetEnv("COMMENT_SERVICE_URL", "http://localhost:8003"),
 		StorageAccessKey:  GetEnv("STORAGE_ACCESS_KEY", ""),
-		StorageSecretKey:  GetEnv("STORE_SECRET_KEY", ""),
+		StorageSecretKey:  GetEnv("STORAGE_SECRET_KEY", ""),
 		StorageEndpoint:   GetEnv("STORAGE_ENDPOINT", ""),
 		StorageRegion:     GetEnv("STORAGE_REGION", "ap-southeast-1"),
-		StorageBucket:     GetEnv("STORAGE_BUCKET", "uploads"),
+		StorageBucket:     GetEnv("STORAGE_BUCKET", "images"),
 	}
 }
