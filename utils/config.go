@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 )
 
@@ -26,10 +28,10 @@ type Config struct {
 	UserServiceURL    string
 	ArticleServiceURL string
 	CommentServiceURL string
-	StorageAccessKey  string
-	StorageSecretKey  string
-	StorageEndpoint   string
-	StorageRegion     string
+	StorageAccessKey  string `validate:"required"`
+	StorageSecretKey  string `validate:"required"`
+	StorageEndpoint   string `validate:"required"`
+	StorageRegion     string `validate:"required"`
 	StorageBucket     string
 }
 
@@ -56,6 +58,15 @@ func FormatTableName(schema, table string) string {
 		return schema + "." + table
 	}
 	return table
+}
+
+// ValidateConfig validates the config struct using struct tags
+func ValidateConfig(config *Config) error {
+	validate := validator.New()
+	if err := validate.Struct(config); err != nil {
+		return fmt.Errorf("config validation failed: %w", err)
+	}
+	return nil
 }
 
 // CheckAndSetConfig loads configuration from environment variables

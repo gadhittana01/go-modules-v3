@@ -107,17 +107,12 @@ func (s *S3StorageClient) generatePublicURL(objectKey string) string {
 // NewStorageClient creates a new storage client based on the provided config
 // This factory function returns the StorageClient interface, allowing easy swapping of implementations
 func NewStorageClient(config *Config) (StorageClient, error) {
-	// Validate required storage config
-	if config.StorageEndpoint == "" || config.StorageRegion == "" || config.StorageAccessKey == "" {
-		return nil, fmt.Errorf("storage configuration is incomplete")
-	}
-
 	// Configure AWS SDK for S3-compatible storage (Supabase Storage)
 	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithRegion(config.StorageRegion),
 		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 			config.StorageAccessKey,
-			config.StorageAccessKey, // Supabase uses access key as both access key and secret
+			config.StorageSecretKey,
 			"",
 		)),
 	)
